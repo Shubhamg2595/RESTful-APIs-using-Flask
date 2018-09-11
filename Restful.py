@@ -8,22 +8,32 @@ api = Api(app)
 
 items = []
 
+
 'simply creating a Student class that is actually inheriting the properties of resource class'
 class Item(Resource):
     def get(self,name):
-        for item in items:
-            if item['name']==name:
-                return item
-        return {'message':'this item does not exist'}, 404
+        '''
+        here i am replacing for loop used in previous version by
+        using filter() method and lambda function
+        but since filter() returns a filter object,we use next() method
+        to fetch the first item returned by this filter function
+        '''
+        item=next(filter(lambda x:x['name']==name ,items),None) #we used none to ensure that if no item is found,default value to be passed is none
+        return {'item':item},200 if item is not None else 404
+        #'''above return statement responds with status code:200 if item is found else with 404'''
 
     def post(self,name):
-        data=request.get_json() #force=True means that we dont need content type header that is even if we dont set content/type to josn. it qwill simple read the data and display it based on it types
-        item={
-            'name':name,
-            'price':data['price']
-        }
-        items.append(item)
-        return item , 201
+        'making sure that item being inserted ,does not already exists in the itemlist'
+        if next(filter(lambda x:x['name']==name,items),None) is not None: #is not none can e=be omitted
+            return {'message':'An item with name {} already exists in the itemlist'.format(name)} , 400
+        else:
+            data=request.get_json() #force=True means that we dont need content type header that is even if we dont set content/type to josn. it qwill simple read the data and display it based on it types
+            item={
+                'name':name,
+                'price':data['price']
+            }
+            items.append(item)
+            return item , 201
 
 
 class ItemList(Resource):
@@ -34,28 +44,6 @@ class ItemList(Resource):
 'accessing the Student Resource'
 api.add_resource(Item,'/item/<string:name>')
 api.add_resource(ItemList,'/items')
-'''
-WHEN YOU USE POST METHOD ,WHERE I AM INSERTING A NEW ITEM USING URL DIRECTLY...
-http://127.0.0.1:5000/item/chair
-OUTPUT WILL BE SOMETHING LIKE THIS...
-
-{
-    "name": "chair",
-    "price": 12.5
-}
-
-'''
-
-
-'''
-USE THE SAME URL WITH GET METHOD ADN CHECK THE OUTPUT
-'''
-
-'''
-Use status codes and check the difference in postman:
-404: not found
-201: created
-'''
 
 if __name__ == '__main__':
     app.run(port=5000,debug=True)
